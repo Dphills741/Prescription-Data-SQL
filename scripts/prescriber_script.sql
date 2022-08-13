@@ -1,17 +1,19 @@
 --Question 1 
---David has the most total claims at 4538
-select p.total_claim_count, p2.npi
+select sum(p.total_claim_count), p2.npi
 from prescription as p
 left join prescriber as p2
 on p.npi = p2.npi
+group by p2.npi,p.total_claim_count
 order by p.total_claim_count desc
 
+
 --Question 1(extended)
-select p.total_claim_count, p2.npi, p2.nppes_provider_first_name, p2.nppes_provider_last_org_name,p2.specialty_description
+select sum(p.total_claim_count) as total_claims, p2.npi, p2.nppes_provider_first_name, p2.nppes_provider_last_org_name,p2.specialty_description
 from prescription as p
-left join prescriber as p2
+inner join prescriber as p2
 on p.npi = p2.npi
-order by p.total_claim_count desc
+group by p2.npi,p.total_claim_count,p2.nppes_provider_first_name,p2.nppes_provider_last_org_name,p2.specialty_description
+order by total_claims desc
 
 --Question 2 A
 --Family practice has the most claims at 9752347
@@ -45,7 +47,7 @@ group by d.generic_name
 order by cost desc
 
 --Question 3 B
-select d.generic_name, (round(sum(p.total_drug_cost)/sum(p.total_day_supply))) as daily_cost
+select d.generic_name, round(sum(total_drug_cost)/sum(total_daily_supply) as daily_cost
 from prescription as p
 left join drug as d
 on p.drug_name = d.drug_name
@@ -74,20 +76,20 @@ group by opioids,d.drug_name,antibiotic_drug_flag
 
 
 --question 5 a
--- 56 
-select count(cbsaname)
+-- 10
+select count(distinct cbsaname)
 from cbsa
 where cbsaname like '%TN%'
 
 --question 5b
 --memphis has highest poulation at 937847
 --Nashville davidson has 8773
-select p.population, c.cbsaname
+select sum(p.population) as total_pop, c.cbsaname, c.cbsa
 from cbsa as c
-left join population as p
+inner join population as p
 on c.fipscounty = p.fipscounty
 where p.population is not null
-group by p.population, c.cbsaname
+group by p.population, c.cbsaname, c.cbsa
 order by p.population --desc
 
 --question 5c --dunno
@@ -132,19 +134,14 @@ where total_claim_count >= 3000
 
 --question 7a
 select p.npi, d.drug_name
-from prescription as p
-full join prescriber as p2
-on p2.npi = p.npi
-full join drug as d
-on d.drug_name = p.drug_name
+from prescriber as p
+cross join drug as d
 where specialty_description = 'Pain Management' AND nppes_provider_city = 'NASHVILLE' and opioid_drug_flag = 'Y'
 
 --question 7b
 select p.npi, d.drug_name, coalesce(total_claim_count,0) as claims
-from prescription as p
-full join drug as d
-on d.drug_name = p.drug_name
-full join prescriber as p2
-on p2.npi = p.npi
+from prescriber as p
+cross join drug as d
+cross join prescription as p2
 where specialty_description = 'Pain Management' AND nppes_provider_city = 'NASHVILLE' and opioid_drug_flag = 'Y'
 group by p.npi,d.drug_name,total_claim_count
